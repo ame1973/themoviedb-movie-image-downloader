@@ -8,7 +8,21 @@ dotenv.config();
 
 const imageBaseUrl = "https://image.tmdb.org/t/p/original";
 
-const timer = (ms) => new Promise((res) => setTimeout(res, ms));
+function sleep(milliseconds) {
+  const date = Date.now();
+  let currentDate = null;
+  do {
+    currentDate = Date.now();
+  } while (currentDate - date < milliseconds);
+}
+
+const slugify = (str) =>
+  str
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 
 const getTrending = async (page = 1) => {
   const media_type = "movie";
@@ -36,17 +50,22 @@ const getMovieImage = async (movie_id) => {
 };
 
 let page = 1;
+let end_page = 50;
 
-while (page <= 10) {
+while (page <= end_page) {
+  sleep(500);
   const trending_data = await getTrending(page + 1);
+  if (trending_data.total_pages < end_page) {
+    end_page = trending_data.total_pages;
+  }
   page = trending_data.page;
 
   const trending_record = trending_data.results;
 
   trending_record.map(async (item) => {
-    await timer(1000);
     const movie_id = item.id;
-    console.log(item.title);
+    const title = slugify(item.title);
+    console.log("[INFO] movie loaded: " + item.title + " " + movie_id);
 
     const image_data = await getMovieImage(movie_id);
 
@@ -55,12 +74,12 @@ while (page <= 10) {
 
       if (poster_path) {
         const url = imageBaseUrl + poster_path;
-        const filename = item.title + ".jpg";
+        const filename = title + ".jpg";
 
         const download_path = path.join(process.cwd(), "download", filename);
 
         if (!fs.existsSync(download_path)) {
-          axios(
+          const result = await axios(
             {
               method: "get",
               url: url,
@@ -70,15 +89,20 @@ while (page <= 10) {
               headers: { "Accept-Encoding": "gzip,deflate,compress" },
             }
           ).then(function (response) {
-            console.log("download_path", download_path);
+            console.log("[DOWNLOAD] ", download_path);
             response.data.pipe(fs.createWriteStream(download_path));
+            console.log("[SUCCESS] Download: ", download_path);
+            sleep(1000);
           });
         } else {
-          console.log(download_path + " already exist");
+          console.log("[INFO] Image already exists: " + download_path);
         }
       } else {
-        console.log(image_data.posters[0]);
+        console.log("[INFO] poster_path not found");
       }
+    } else {
+      console.log("[INFO] No poster found: " + title);
     }
   });
+  console.log("[INFO] Page: " + page + " of " + end_page);
 }

@@ -7,7 +7,6 @@ const API = axios.create({
     Accept: "application/json",
     "Accept-Encoding": "gzip,deflate,compress",
   },
-  timeout: 5000,
 });
 
 export default API;

@@ -8,6 +8,9 @@ dotenv.config();
 
 const imageBaseUrl = "https://image.tmdb.org/t/p/original";
 
+let page = 1;
+let end_page = 50;
+
 function sleep(milliseconds) {
   const date = Date.now();
   let currentDate = null;
@@ -48,9 +51,6 @@ const getMovieImage = async (movie_id) => {
 
   return response.data;
 };
-
-let page = 1;
-let end_page = 50;
 
 while (page <= end_page) {
   sleep(500);
